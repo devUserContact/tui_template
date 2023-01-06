@@ -4,15 +4,35 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use std::{error::Error, io};
+
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Style},
-    widgets::{Block, BorderType, Borders},
+    widgets::{Block, BorderType, Borders, List, ListItem, Paragraph},
     Frame, Terminal,
 };
 use tui_input::backend::crossterm::EventHandler;
 use tui_input::Input;
+
+enum InputMode {
+    Normal,
+    Editing,
+}
+struct App {
+    input: Input,
+    input_mode: InputMode,
+    messages: Vec<String>,
+}
+impl Default for App {
+    fn default() -> App {
+        App {
+            input: Input::default(),
+            input_mode: InputMode::Normal,
+            messages: Vec::new(),
+        }
+    }
+}
 
 fn main() -> Result<(), Box<dyn Error>> {
     // setup terminal
@@ -23,7 +43,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut terminal = Terminal::new(backend)?;
 
     // create app and run it
-    let res = run_app(&mut terminal);
+    let app = App::default();
+    let res = run_app(&mut terminal, app);
 
     // restore terminal
     disable_raw_mode()?;
@@ -41,7 +62,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
+fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<()> {
     loop {
         terminal.draw(ui)?;
 
